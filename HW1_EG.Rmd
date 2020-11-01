@@ -1,0 +1,341 @@
+---
+title: "Homework Assignment 1"
+author: "Elise Gordon"
+date: 'Assigned: Oct 24, 2020, Due Sun Nov 01, 2020 11:59PM'
+output:
+  html_document: 
+    toc: true
+    toc_float: true
+    code_folding: show 
+    
+---
+
+## Data frame basics
+
+We will continue working with the nycflights dataset we looked at in class. **Please be sure to keep the data file in the same directory as the RMD file - your project directory.**
+
+First - make sure that you are reading the data correctly and doing all the data cleaning steps that we did in class. Feel free to go beyond our class work in cleaning the data if you feel the need. 
+
+I now would like you to answer the following - all in their own separate R code blocks.
+
+## Reading My Data
+
+```{r, cache = TRUE}
+
+nyc <- read.csv("nycflights.csv")
+
+# Quick exploration of the data
+
+str(nyc)
+summary(nyc)
+
+```
+
+## Cleaning the Data
+
+```{r}
+
+# Remove the Column X
+
+nyc$X <- NULL
+
+# Remove the Column time_hour
+
+nyc$time_hour <- NULL
+
+# Factorize the columns that need to be factors
+
+nyc$month <- as.factor(nyc$month)
+nyc$carrier <- as.factor(nyc$carrier)
+nyc$flight <- as.factor(nyc$flight)
+nyc$tailnum <- as.factor(nyc$tailnum)
+nyc$origin <- as.factor(nyc$origin)
+nyc$dest <- as.factor(nyc$dest)
+
+# Read the cleaned data
+str(nyc)
+
+```
+
+### Data Exploration
+
+Let's first do some simple exploration of this data. 
+
+- How many airlines are there? (Hint: `levels` and `length` can be useful here)
+
+- How many flights there were by the airline with code `OO`? (Hint: `nrow` can be useful here along with logical indexing)
+
+- How long is the shortest flight out of any NYC airport? (Hint: `min` can be useful, remember to handle `NA` values)
+
+- How many flights where there by United Airlines (code: UA) on Jan 12th 2013?
+
+#### How many airlines are there?
+
+```{r}
+
+# Calculate the number of unique airline carriers 
+
+nlevels(nyc$carrier)
+
+# How many flights were there by United Airlines on Jan 12th 2013?
+
+UADatafram <- data.frame(nyc[(nyc$carrier == "UA") & (nyc$month == "1") & (nyc$day == 12) & (nyc$year == 2013), ])
+
+nrow(UADatafram)
+```
+#### How many flights were there with the airline code "OO"?
+
+```{r}
+# Calculate the number of rows of data that had carrier OO
+
+nrow(nyc[nyc$carrier == "OO",])
+
+```
+
+#### How long is the shortest flight out of any NYC airport?
+
+```{r}
+
+# Show minimum flight time for all NYC flights
+
+round(min(nyc$air_time, na.rm = TRUE), 2)
+
+```
+
+#### How many flights were there by United Airlines on Jan 12th 2013?
+
+```{r}
+# Create data frame for United Airlines flights on Jan 12th 2013
+
+UADatafram <- data.frame(nyc[(nyc$carrier == "UA") & (nyc$month == "1") & (nyc$day == 12) & (nyc$year == 2013), ])
+
+# Display number of rows in the new data frame
+
+nrow(UADatafram)
+```
+
+
+### Arrival Delay
+
+Lets focus on Arrival Delay.
+
+- What was the average arrival delay for all airports and all airlines combined in Jan 2013? 
+
+- Whats was the median arrival delay for all airports and all airlines combined in Jan 2013?
+
+Based on your answers to the two questions above, what can you say about the distribution of arrival delays? Provide your answer in a text paragraph form.
+
+
+```{r}
+# Create data frame for all flights from NYC during Jan 2013
+
+Jan2013 <- data.frame(nyc[(nyc$month == "1") & (nyc$year == 2013), ])
+
+```
+#### What was the average arrival delay for all airports and all airlines combined in Jan 2013?
+
+```{r}
+# Calculate the average arrival delay in the new data frame Jan2013
+
+round(mean(Jan2013$arr_delay, na.rm = TRUE), 2)
+```
+
+#### What was the median arrival delay for all airports and all airlines combined in Jan 2013
+
+```{r}
+
+# Calculate the median arrival delay in the new data frame Jan2013
+
+median(Jan2013$arr_delay, na.rm = TRUE)
+
+```
+
+Because the mean is greater than the median, the distribution of arrival times is positively skewed, meaning most of the flights are less delayed than the average.
+
+### Airline Performance
+
+Lets see if all airlines are equally terrible as far as flight arrival delays are concerned. For this question you will have to make sure that airline column is coded as a factor.
+
+- Calculate average arrival delays by airline (Hint: look up the command `tapply`)
+
+- Draw a Bar Plot of Average Arrival Delays for all the Airlines (Hint: command for making a Bar Plot is simply `barplot`)
+
+- Which airline has the highest average arrival delay? Which airline has the smallest average arrival delay? Are there airlines that actually have negative average delay? Provide answer to this question in a text paragraph form using **inline R code**.
+
+#### Average arrival delays by airline
+
+```{r}
+# Create data frame with average arrival times by carrier
+
+round(tapply(nyc$arr_delay, nyc$carrier, mean, na.rm = TRUE), 2)
+delay_by_airline <- tapply(nyc$arr_delay, nyc$carrier, mean, na.rm = TRUE)
+
+# Bar plot of average arrival delays for all airlines
+
+barplot(delay_by_airline)
+
+```
+
+The airline with the highest average arrival delay is: `r names(delay_by_airline[delay_by_airline == max(delay_by_airline)])`
+
+The airline with the smallest average arrival delay is: `r names(delay_by_airline[delay_by_airline == min(delay_by_airline)])`
+
+Airlines with a negative delay are: `r names(delay_by_airline[delay_by_airline <0])`
+
+### Air Gain
+
+Create a new column named airgain such that airgain = (departure delay - arrival delay) : this is the amount of delay a flight made up while in air.
+
+a) Explore airgain data - calculate suitable descriptive statistics and appropriate graphics to better understand this data. This part is open ended - you do what you feel works best for you.
+
+b) Answer the questions:
+
+  - do airlines actually gain any time when in air on average? 
+
+  - Calculate average airgain for different airlines - which airlines do a better job, which do a worse job? 
+  
+#### Explore Airgain Data
+  
+```{r}
+# Create new column call airgain within nyc dataset
+
+nyc$airgain <- (nyc$dep_delay - nyc$arr_delay)
+
+# Explore the new data
+
+summary(nyc$airgain)
+
+# Descriptive statistics for airgain: Mean time gained
+
+round(mean(nyc$airgain, na.rm = TRUE), 2)
+
+# Descriptive statistics for airgain: Mean time gained by airline
+
+airgain_airline <- tapply(nyc$airgain, nyc$carrier, mean, na.rm = TRUE)
+barplot(airgain_airline)
+```
+
+#### Do airlines gain time on average? Yes
+
+```{r}
+# Determine mean time gained in the air. If > 0, Airlines do gain time
+
+round(mean(nyc$airgain, na.rm = TRUE), 2)
+
+
+```
+
+#### Airgain data by airline
+
+```{r}
+# Average airgain by airline
+round(airgain_airline, 2)
+
+# Airlines that do better with gaining time in air
+names(airgain_airline[airgain_airline >0])
+
+# Airlines that do worse with gaining time in air
+names(airgain_airline[airgain_airline <0])
+```
+
+
+### Merging Data Frames
+
+> This section and the next is new compared to the class exercise. As you had an opportunity to work together in your breakout rooms for previous questions, this and the next section will carry a higher weight in grading for this HW.
+
+You can get detailed information about the physical planes in our dataset in this file: `planes.csv`. Download and save this file in your project directory.
+
+a) Read the `planes.csv` file using `read.csv` command. Do any data cleaning necessary.
+
+```{r}
+# Read the data
+
+planes <- read.csv("planes.csv")
+
+# Quick Exploration of the data
+
+summary(planes)
+str(planes)
+
+# Clean the data - remove Column X
+
+planes$X <- NULL
+
+# Clean the data - Factorize columns that should be factors
+
+planes$tailnum <- as.factor(planes$tailnum)
+planes$type <- as.factor(planes$type)
+planes$manufacturer <- as.factor(planes$manufacturer)
+planes$model <-as.factor(planes$model)
+planes$engine <-as.factor(planes$engine)
+
+# Re-read cleaned data
+
+str(planes)
+
+```
+
+
+b) Merge the flights data and the planes data using the `merge` command. You should do the merge on the common column named `tailnum`. *getting this right may need some trial and error and getting some help*.
+
+```{r}
+# Merge datasets
+
+ComboData <- merge(nyc, planes, by="tailnum")
+
+# Quick exploration of merged dataset
+
+str(ComboData)
+
+```
+
+
+c) Now that you have a merged dataset, think of what interesting questions that you can ask that can be answered using the merged dataset. You are asked to pose five interesting questions and answer them. (For example: who are the top 10 manufacturers of planes that fly out of NYC airports?) **Be creative. Be bold. Ask questions that you would want to know answers to even if you were not doing this for a HW. **
+
+### Bold Questions with Merged Data sets
+
+#### Are certain engine types more delayed than others?
+
+```{r}
+# Create a data frame and bar plot that shows the average departure delay by engine type
+
+delays_by_engine <- tapply(ComboData$dep_delay, ComboData$engine, mean, na.rm = TRUE)
+barplot(delays_by_engine)
+```
+
+The engine with the longest average departure delay is: `r names(delays_by_engine[delays_by_engine == max(delays_by_engine)])`
+
+#### Which engines are the fastest on average?
+
+```{r}
+# Create a data frame and barplot with the average flying speeds by engine type
+
+FastestEngines <- tapply((ComboData$distance/(ComboData$air_time/60)), ComboData$engine, mean, na.rm = TRUE)
+barplot(FastestEngines)
+```
+
+#### Which manufacturer has the longest and shortest departure delays?
+
+```{r}
+# Create data frame and barplot showing the average departure delays by manufacturer
+
+delays_by_manufacturer <- tapply(ComboData$dep_delay, ComboData$manufacturer, mean, na.rm = TRUE)
+barplot(delays_by_manufacturer)
+```
+
+
+The manufacturer with the longest average departure delay is: `r names(delays_by_manufacturer[delays_by_manufacturer == max(delays_by_manufacturer)])`
+
+The manufacturer with the shortest average departure delay is: `r names(delays_by_manufacturer[delays_by_manufacturer == min(delays_by_manufacturer)])`
+
+#### How frequently is each manufacturer used by each airline?
+
+```{r}
+
+# Create table to show counts of flights by each airline for each manufacturer
+
+manufacturers_by_airline <- table(ComboData$manufacturer, ComboData$carrier)
+manufacturers_by_airline
+
+```
+
